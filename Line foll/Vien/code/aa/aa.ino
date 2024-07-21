@@ -260,19 +260,7 @@ void funcion_Cruce() {
 
   tone(PINBUZZER, 2500, 50);
 }
-/* 
 
-Los periféricos (en inglés Peripherals), tienen por objetivo servir como interfáz de Humano - Máquina. 
-
-Vamos a comunicarnos con el robot utilizando los periféricos. En este caso, Open Lamborghino tiene:
-
-- Un botón, conectado en el pin digital 2.
-- Un Buzzer, conectado en el pin digital 10.
-- Un LED, conectado en el pin 13, en la placa de Arduino.
-
-En esta pestaña, hay funciones básicas para utilizar los periféricos. 
-
-*/
 
 
 
