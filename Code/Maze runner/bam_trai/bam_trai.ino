@@ -18,9 +18,11 @@
  */
  
 int coi = 12;
-int led = 10;
+int led = 9;
 int nut1 = A1;
-int nut2 = A2;
+int nut2 = A0;
+
+
 
 // IR cambien
 int cambien1 = A4;  
@@ -30,15 +32,16 @@ int cambien4 = A7;
 int cambien[4] = {0, 0, 0, 0};
 
 // Drive
-int ENA = 2;              
+int ENA = 10;              
 int motorA1 = 3;
 int motorA2 = 4;
-int motorB1 = 6;
-int motorB2 = 7;
-int ENB = 8;  
-int STBY = 5;
+int motorB1 = 5;
+int motorB2 = 6;
+int ENB = 9 ;  
+int STBY = 2;
 
-int toc_do_ban_dau = 200; 
+int toc_do_ban_dau = 250; 
+
 
 
 // PID
@@ -50,13 +53,15 @@ float tin_hieu = 0, P = 0, I = 0, D = 0, gia_tri_PID = 0;
 float tin_hieu_tam = 0, I_tam = 0;
 
 int flag = 0;
+unsigned long time;
 
 void setup()
 {
-  pinMode(cambien1, INPUT);
-  pinMode(cambien2, INPUT);
-  pinMode(cambien3, INPUT);
-  pinMode(cambien4, INPUT);
+  pinMode(cambien1, INPUT_PULLUP);
+  pinMode(cambien2, INPUT_PULLUP);
+  pinMode(cambien3, INPUT_PULLUP);
+  pinMode(cambien4, INPUT_PULLUP);
+  pinMode(nut1, INPUT_PULLUP);
 
   pinMode(motorA1, OUTPUT);
   pinMode(motorA2, OUTPUT);
@@ -67,23 +72,50 @@ void setup()
 
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW);
-
-
+  digitalWrite(STBY, HIGH);
+  time = millis();
   Serial.begin(9600);                   
   delay(500);
-  Serial.println("SS");
+  Serial.println("San Sang");
   delay(1000);
 }
 
 void loop ()
 {
-  void test1_bam_trai();
+   analogWrite(ENA, 90);
+      analogWrite(ENB, 100);
+  digitalWrite(motorA1, HIGH);
+  digitalWrite(motorA2, LOW);
+  digitalWrite(motorB1, HIGH);
+  digitalWrite(motorB2, LOW);
+// test1_bam_trai();
 }
 
 void test1_bam_trai()
 {
-  doc_cam_bien();
-  Serial.print(tin_hieu);
+  int trang_thai_nut = digitalRead(nut1);
+  if (trang_thai_nut == HIGH ){
+    static bool kiem_tra_in = false;
+    if (!kiem_tra_in) {
+    Serial.println("San Sang Mode 1");
+    delay(500);
+    Serial.println("Mode 1");
+    kiem_tra_in = true;
+     }
+    serial_blt();
+  }
+  else {
+  static bool kiem_tra_in = false;
+  if (!kiem_tra_in) {
+  Serial.println("San Sang Mode 2");
+  delay(2000);
+  Serial.println("Mode 2");
+  kiem_tra_in = true;
+  }
+   
+ doc_cam_bien();
+  
+  Serial.print("tin hieu: " + String(tin_hieu));
 
 //dừng
   if ((tin_hieu == 1) || (tin_hieu ==4)){
@@ -98,6 +130,7 @@ void test1_bam_trai()
        if (tin_hieu == 15) {
         dung();
         digitalWrite(coi, HIGH);
+        in_trang_thai();
         flag = 1;
           }
          }
@@ -109,6 +142,7 @@ void test1_bam_trai()
       if (tin_hieu ==15) {
         dung();
         digitalWrite(coi, HIGH);
+        in_trang_thai();
         flag =1;
         }
        }
@@ -122,6 +156,7 @@ void test1_bam_trai()
       quaytrai90();
       analogWrite(ENA, 90);
       analogWrite(ENB, 100);
+      in_trang_thai();
       doc_cam_bien();
      }
     while (tin_hieu == 8);
@@ -132,6 +167,7 @@ void test1_bam_trai()
       quayphai90();
       analogWrite(ENA, 100);
       analogWrite(ENB, 90);
+      in_trang_thai();
       doc_cam_bien();      
     }
      while (tin_hieu == 8);
@@ -142,21 +178,24 @@ void test1_bam_trai()
       quaytrai180();
       analogWrite(ENA, 90);
       analogWrite(ENB, 90); 
+      in_trang_thai();
       doc_cam_bien();          
     }
      while (tin_hieu == 8);
    }
 //vượt ngõ 4
-   else if (tin_hieu == 15) tin_hieu = 8;
+   else if (tin_hieu == 15) { tin_hieu = 8; in_trang_thai();}
 //vượt ngõ 3
-   else if (tin_hieu == 60) tin_hieu = 11;
+   else if (tin_hieu == 60) { tin_hieu = 11; in_trang_thai();}
 //đi thẳng
    else {
    dieuchinhPID();
    dithangPID();
+   in_trang_thai();
+    }
    }
+   
 }
-
 
 
  
@@ -221,9 +260,13 @@ void dithangPID()
 
   toc_do_motor_trai = constrain(toc_do_motor_trai, 0, 255);  
   toc_do_motor_phai = constrain(toc_do_motor_phai, 0, 255); 
-
+  Serial.println("toc do trai:  " + String(toc_do_motor_trai));
+  Serial.println("toc do phai:  " + String(toc_do_motor_phai));
   analogWrite(ENA, toc_do_motor_trai); 
   analogWrite(ENB, toc_do_motor_phai); 
+  //kiểm tra đầu ra tốc độ
+  int kiem_tra_toc_do = analogRead(nut2);
+  Serial.println("kiem tra toc do:  " + String(kiem_tra_toc_do));
 
   dithang();
 }
@@ -274,4 +317,83 @@ void dung()
   digitalWrite(motorA2, LOW);
   digitalWrite(motorB1, LOW);
   digitalWrite(motorB2, LOW);
+}
+////////////////////////////////////
+void in_gia_tri() {
+  static bool kiem_tra_in = false;
+  if (!kiem_tra_in) {
+  Serial.print("ki: " + String(Ki));
+  Serial.print("    kp: " + String(Kp));
+  Serial.print("    kd: " + String(Kd));
+  Serial.println("    toc do ban dau: " + String(toc_do_ban_dau));
+  kiem_tra_in = true;
+  }
+}
+
+void in_trang_thai() {
+//  static bool kiem_tra_in = false;
+//  if (!kiem_tra_in) {
+  Serial.println("Da thuc hien: " + String(tin_hieu));
+//  kiem_tra_in = true;
+  }
+
+////////////////////////////////////////////////
+void serial_blt(){
+in_gia_tri();
+if (Serial.available() > 0){
+  String gia_tri_gui = Serial.readStringUntil('\n');
+  if (gia_tri_gui == "it1"){
+   Ki++;
+   Serial.println("da tang Ki+1:" + String(Ki));
+  }
+  else if (gia_tri_gui == "ig1"){
+   Ki--;
+   Serial.println("da giam Ki-1:" + String(Ki));
+  }
+  else if (gia_tri_gui == "pt1"){
+   Kp++;
+   Serial.println("da tang Kp+1:" + String(Kp));
+  }
+  else if (gia_tri_gui == "pg1"){
+   Kp--;
+   Serial.println("da giam Kp-1:" + String(Kp));
+  }
+  else if (gia_tri_gui == "dt1"){
+   Kd++;
+   Serial.println("da tang Kd+1:" + String(Kd));
+  }
+  else if (gia_tri_gui == "dg1"){
+   Kd--;
+   Serial.println("da giam Kd-1:" + String(Kd));
+  }
+  else if (gia_tri_gui == "tdt1"){
+   toc_do_ban_dau = toc_do_ban_dau + 5;
+   Serial.println("da tang toc do ban dau +5:" + String(toc_do_ban_dau));
+  }
+  else if (gia_tri_gui == "tdg1"){
+   toc_do_ban_dau = toc_do_ban_dau - 5;
+   Serial.println("da tang toc do ban dau - 5:" + String(toc_do_ban_dau));
+  }
+  else if (gia_tri_gui == "kti")
+   Serial.println("Ki:" + String(Ki));
+  else if (gia_tri_gui == "ktp")
+   Serial.println("Kp:" + String(Kp));
+  else if (gia_tri_gui == "ktd")
+   Serial.println("Kd:" + String(Kd));
+  else if (gia_tri_gui == "kttd")
+   Serial.println("toc do ban dau:" + String(toc_do_ban_dau));
+  else if (gia_tri_gui == "kt"){
+  Serial.print("ki: " + String(Ki));
+  Serial.print("    kp: " + String(Kp));
+  Serial.print("    kd: " + String(Kd));
+  Serial.println("    toc do ban dau: " + String(toc_do_ban_dau));
+  }
+}
+}
+
+void delay_millis()
+{
+    if ( (unsigned long) (millis() - time) > 1000)  
+  Serial.println("San Sang Mode 2");
+  time = millis();
 }
